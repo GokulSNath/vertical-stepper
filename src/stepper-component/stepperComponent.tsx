@@ -1,57 +1,85 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-import React, { useState, useEffect } from 'react';
-import './styles.css';
-import { Istep, IstepperProps } from './types';
-import whiteTick from '../assets/white-tick.svg';
+import React, { ReactElement, FC } from 'react';
+import classes from './styles.module.scss';
+import { IStep, IStepperProps } from './types';
+import Bubble from '../bubble';
+import { LABEL_POSITION, Elements } from '../constants';
 
-const Stepper = (props: IstepperProps): any => {
-  const { steps, currentActiveStepIndex } = props;
+const Stepper: FC<IStepperProps> = (props) => {
+  const {
+    steps,
+    currentStepIndex = 0,
+    onStepClick,
+    renderBubble,
+    styles = {},
+    labelPosition = LABEL_POSITION.RIGHT
+  } = props;
 
-  // const whiteTick = require('../assets/white-tick.svg') as string;
-  const [stepsVal, setSteps] = useState<Istep[]>([]);
-  const [currentActiveStepIndexVal, setCurrentActiveStepIndexVal] = useState<number>()
-
-  useEffect(() => {
-    setSteps(steps);
-  }, [steps]);
-
-  useEffect(() => {
-    setCurrentActiveStepIndexVal(currentActiveStepIndex ?? 0);
-  }, [currentActiveStepIndex]);
+  const getStyles = (element: Elements, step: IStep, index: number): object => {
+    const getElementStyle = styles[element];
+    if (getElementStyle) {
+      return getElementStyle(step, index);
+    }
+    return {};
+  };
 
   return (
-    <div className="stepperContainer">
-      {stepsVal?.map((step: Istep, index: number) => (
-        <div key={index} className="eachStep">
-          <div className='bubbleLineWrapper'>
-            <div
-              className={`eachBubble
-              ${index === currentActiveStepIndexVal && 'activeStepBubble'}
-              ${index > currentActiveStepIndexVal && 'inactiveStepBubble'}`}
-            >
-              {currentActiveStepIndexVal > index && (
-                <img
-                  src={whiteTick}
-                  className="whiteTickImg"
-                  alt=""
-                />
-              )
-              || index + 1}
-            </div>
-            <div className='eachLabel'>
-              {step.label && (
-                <span className='labelTitle'>
-                  {step?.label}
+    <div className={classes.stepperContainer}>
+      {steps?.map((step: IStep, stepIndex: number): ReactElement => (
+        <div key={stepIndex} className={classes.eachStep} data-testId="stepper-steps">
+          <div className={classes.bubbleLineWrapper}>
+            <Bubble
+              step={step}
+              index={stepIndex}
+              currentStepIndex= {currentStepIndex}
+              handleStepClick={(): void => onStepClick && onStepClick(step, stepIndex)}
+              renderAdornment={renderBubble}
+              getStyles={(element: Elements): object => getStyles(element, step, stepIndex)}
+            />
+            <div className={`${classes.labelContainer} ${classes[`labelContainer__${labelPosition || LABEL_POSITION.RIGHT}`]}`}>
+              {step?.label && (
+                <span
+                  className={`${classes.labelTitle}
+                  ${onStepClick && classes.cursorPointer}
+                  ${stepIndex === currentStepIndex && classes.activeLabelTitle}`}
+                  style={{
+                    ...((getStyles(Elements.LabelTitle, step, stepIndex)) || {}),
+                    ...((stepIndex === currentStepIndex && getStyles(Elements.ActiveLabelTitle, step, stepIndex)) || {})
+                  }}
+                  onClick={(): void => onStepClick && onStepClick(step, stepIndex)}
+                  role="presentation"
+                  data-testId={`stepper-label-${stepIndex}`}
+                >
+                  {step.label}
                 </span>
               )}
               {step?.description && (
-                <span className='labelDescription'>
-                  {step?.description}
+                <span
+                  className={`${classes.labelDescription}
+                  ${onStepClick && classes.cursorPointer}
+                  ${stepIndex === currentStepIndex && classes.activeLabelDescription}`}
+                  style={{
+                    ...((getStyles(Elements.LabelDescription, step, stepIndex)) || {}),
+                    ...((stepIndex === currentStepIndex &&
+                      getStyles(Elements.ActiveLabelDescription, step, stepIndex)) || {})
+                  }}
+                  onClick={(): void => onStepClick && onStepClick(step, stepIndex)}
+                  role="presentation"
+                  data-testId={`stepper-desc-${stepIndex}`}
+                >
+                  {step.description}
                 </span>
               )}
             </div>
-            {index < stepsVal?.length - 1 && (
-              <div className={`lineSeparator ${(index > currentActiveStepIndexVal - 1) && 'activeStepLineSeparator'}`} />
+            {stepIndex < steps?.length - 1 && (
+              <div
+                className={`${classes.lineSeparator}
+                ${stepIndex > currentStepIndex - 1 && classes.inactiveStepLineSeparator}`}
+                style={{
+                  ...((getStyles(Elements.LineSeparator, step, stepIndex)) || {}),
+                  ...((stepIndex > currentStepIndex - 1
+                  && getStyles(Elements.InactiveLineSeparator, step, stepIndex)) || {})
+                }}
+              />
             )}
           </div>
         </div>
